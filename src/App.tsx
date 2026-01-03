@@ -4,6 +4,7 @@ import { ThemeProvider, createTheme, CssBaseline, Box } from '@mui/material';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import ProjectList from './pages/ProjectList';
+import AdminProject from "./pages/AdminProject.tsx";
 
 const theme = createTheme({
   palette: {
@@ -40,6 +41,7 @@ const App: React.FC = () => {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/projects" element={<ProjectList />} />
+                <Route path="/admin/projects/new" element={<AdminProject />} />
               </Routes>
             </Box>
           </Box>

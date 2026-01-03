@@ -1,7 +1,6 @@
-import axios, {type AxiosResponse } from 'axios';
-import type {Project, ContactRequest, Skill} from '../types';
+import axios, { type AxiosResponse } from 'axios';
+import type { Project, ProjectRequest, Skill, ContactRequest } from '../types';
 
-// API 기본 설정
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
     headers: {
@@ -10,8 +9,11 @@ const api = axios.create({
 });
 
 export const projectService = {
-    // 프로젝트 목록 조회 (응답 데이터가 Project 배열임을 명시)
     getAll: (): Promise<AxiosResponse<Project[]>> => api.get<Project[]>('/projects'),
+
+    // 관리자 전용 프로젝트 등록 API 추가
+    create: (data: ProjectRequest): Promise<AxiosResponse<Project>> =>
+        api.post<Project>('/projects/admin', data),
 };
 
 export const skillService = {
