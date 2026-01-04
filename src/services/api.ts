@@ -11,7 +11,11 @@ const api = axios.create({
 export const projectService = {
     getAll: (): Promise<AxiosResponse<Project[]>> => api.get<Project[]>('/projects'),
 
-    // 관리자 전용 프로젝트 등록 API 추가
+    // 단일 프로젝트 조회
+    getById: (id: number): Promise<AxiosResponse<Project>> =>
+        api.get<Project>(`/projects/${id}`),
+
+    // 관리자 전용 프로젝트 등록
     create: (data: ProjectRequest): Promise<AxiosResponse<Project>> =>
         api.post<Project>('/projects/admin', data),
 };
