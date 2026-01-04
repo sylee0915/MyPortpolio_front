@@ -15,7 +15,7 @@ export interface Skill {
  * 백엔드 DTO(ProjectResponseDto)의 필드명 'id'와 일치하도록 수정되었습니다.
  */
 export interface Project {
-    id?: number;                 // 기존 projectId에서 id로 변경하여 리다이렉션 오류 해결
+    projectId?: number;
     title: string;
     description: string;         // 프로젝트 개요
     period: string;              // 제작 기간
