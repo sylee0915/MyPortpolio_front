@@ -1,5 +1,8 @@
 // src/types/index.ts
 
+/**
+ * 기술 스택 정보 인터페이스
+ */
 export interface Skill {
     skillId: number;
     name: string;
@@ -7,22 +10,28 @@ export interface Skill {
     iconUrl?: string;
 }
 
+/**
+ * 프로젝트 정보 인터페이스
+ * 백엔드 DTO(ProjectResponseDto)의 필드명 'id'와 일치하도록 수정되었습니다.
+ */
 export interface Project {
-    projectId?: number;          // 생성 시에는 없을 수 있으므로 Optional
+    id?: number;                 // 기존 projectId에서 id로 변경하여 리다이렉션 오류 해결
     title: string;
     description: string;         // 프로젝트 개요
     period: string;              // 제작 기간
     teamSize: string;            // 제작 인원
-    content: string;             // 상세 내용 (마크다운 등을 고려할 수 있음)
+    content: string;             // 상세 내용
     githubUrl?: string;
     demoUrl?: string;            // 배포 사이트 주소
     thumbnailUrl?: string;
     erdImageUrl?: string;        // ERD 다이어그램
     architectureImageUrl?: string; // 기술 아키텍처
-    skills: string[];            // 이름 리스트로 받기로 했으므로 string[]
+    skills: string[];            // 기술 이름 리스트
 }
 
-// 등록 요청을 위한 별도의 타입
+/**
+ * 프로젝트 등록 및 수정 요청을 위한 인터페이스
+ */
 export interface ProjectRequest {
     title: string;
     description: string;
@@ -36,7 +45,10 @@ export interface ProjectRequest {
     architectureImageUrl: string;
     skillIds: number[];          // 백엔드에서 ID 리스트를 받으므로 number[]
 }
-// 3. 연락처 전송 데이터 타입
+
+/**
+ * 연락처 전송 데이터 인터페이스
+ */
 export interface ContactRequest {
     senderName: string;
     email: string;
@@ -44,9 +56,16 @@ export interface ContactRequest {
     message: string;
 }
 
+/**
+ * 사이트 환경 설정 인터페이스
+ * 메인 페이지 콘텐츠 및 테마 색상 관리를 위해 필드가 확장되었습니다.
+ */
 export interface SiteConfig {
-    mainTitle: string;
-    subTitle: string;
-    mainColor: string;
-    subColor: string;
+    id?: number;
+    mainTitle: string;           // 메인 타이틀 문구
+    subTitle: string;            // 서브 타이틀 문구
+    mainImageUrl: string;        // 메인 프로필 사진 URL
+    primaryColor: string;        // 메인 배경색 (Hex)
+    secondaryColor: string;      // 포인트 색상 (Hex)
+    navColor: string;            // 네비게이션 바 색상
 }
