@@ -6,6 +6,8 @@ import Home from './pages/Home';
 import ProjectList from './pages/ProjectList';
 import AdminProject from "./pages/AdminProject.tsx";
 import AdminSettings from "./pages/AdminSettings.tsx";
+import Login from "./pages/Login.tsx";
+import ProtectedRoute from './components/ProtectedRoute';
 import api from './services/api';
 import type { SiteConfig } from './types';
 
@@ -81,13 +83,15 @@ const App: React.FC = () => {
             <Navbar />
             <Box component="main" sx={{ flexGrow: 1 }}>
               <Routes>
-                {/* Home 페이지에 config를 전달하여 타이틀 등을 동적으로 렌더링합니다. */}
                 <Route path="/" element={<Home config={config} />} />
                 <Route path="/projects" element={<ProjectList />} />
+                <Route path="/login" element={<Login />} /> {/* 로그인 경로 추가 */}
 
-                {/* 관리자 전용 경로 */}
-                <Route path="/admin/projects/new" element={<AdminProject />} />
-                <Route path="/admin/settings" element={<AdminSettings />} />
+                {/* 관리자 전용 경로 보호 */}
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/admin/projects/new" element={<AdminProject />} />
+                  <Route path="/admin/settings" element={<AdminSettings />} />
+                </Route>
               </Routes>
             </Box>
           </Box>
