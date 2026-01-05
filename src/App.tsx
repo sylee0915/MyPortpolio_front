@@ -98,6 +98,7 @@ const App: React.FC = () => {
                 {/* 관리자 전용 경로 보호 */}
                 <Route element={<ProtectedRoute />}>
                   <Route path="/admin/projects/new" element={<AdminProject />} />
+                  <Route path="/admin/projects/edit/:id" element={<AdminProject />} />
                   <Route path="/admin/settings" element={<AdminSettings />} />
                 </Route>
               </Routes>
