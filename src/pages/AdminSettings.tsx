@@ -28,12 +28,18 @@ const AdminSettings: React.FC = () => {
 
     // 현재 설정 불러오기
     useEffect(() => {
-        api.get<SiteConfig>('/config')
-            .then(res => {
+        const fetchConfig = async () => {
+            try {
+                const res = await api.get<SiteConfig>('/config');
                 if (res.data) setFormData(res.data);
-            })
-            .catch(err => console.error("설정 로드 실패:", err))
-            .finally(() => setLoading(false));
+            } catch (err) {
+                console.error("설정 로드 실패:", err);
+                setSnackbar({ open: true, message: '설정을 불러오는데 실패했습니다', severity: 'error' });
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchConfig();
     }, []);
 
     // 입력값 변경 핸들러
@@ -42,47 +48,118 @@ const AdminSettings: React.FC = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // 메인 이미지 업로드 핸들러
+    // 메인 이미지 업로드 핸들러 (개선 버전)
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        // 이미지 파일 검증
+        if (!file.type.startsWith('image/')) {
+            setSnackbar({ open: true, message: '이미지 파일만 업로드 가능합니다', severity: 'error' });
+            return;
+        }
+
+        // 파일 크기 검증 (예: 5MB 제한)
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.size > maxSize) {
+            setSnackbar({ open: true, message: '이미지 크기는 5MB 이하여야 합니다', severity: 'error' });
+            return;
+        }
 
         setUploading(true);
         try {
             const url = await uploadImageToImgBB(file);
             setFormData(prev => ({ ...prev, mainImageUrl: url }));
-            setSnackbar({ open: true, message: '이미지가 업로드되었습니다.', severity: 'success' });
+            setSnackbar({ open: true, message: '이미지가 업로드되었습니다', severity: 'success' });
         } catch (err) {
-            setSnackbar({ open: true, message: '이미지 업로드에 실패했습니다.', severity: 'error' });
+            console.error('이미지 업로드 실패:', err);
+            setSnackbar({ open: true, message: '이미지 업로드에 실패했습니다', severity: 'error' });
         } finally {
             setUploading(false);
         }
     };
 
+    // 색상 코드 검증
+    const isValidHexColor = (color: string): boolean => {
+        if (color === 'transparent') return true;
+        return /^#([0-9A-F]{3}){1,2}$/i.test(color);
+    };
+
     // 설정 저장 핸들러
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // 유효성 검사
+        if (!formData.mainTitle.trim() || !formData.subTitle.trim()) {
+            setSnackbar({ open: true, message: '필수 항목을 입력해주세요', severity: 'error' });
+            return;
+        }
+
+        // 색상 코드 검증
+        if (!isValidHexColor(formData.primaryColor) || !isValidHexColor(formData.secondaryColor)) {
+            setSnackbar({ open: true, message: '올바른 색상 코드를 입력해주세요 (예: #FFFFFF)', severity: 'error' });
+            return;
+        }
+
         setSubmitting(true);
 
         try {
-            // 관리자 인증 헤더는 api.ts의 interceptor에서 처리됨
             await api.put('/admin/config', formData);
-            setSnackbar({ open: true, message: '사이트 설정이 저장되었습니다. 새로고침 시 적용됩니다.', severity: 'success' });
+            setSnackbar({
+                open: true,
+                message: '사이트 설정이 저장되었습니다. 새로고침 시 적용됩니다.',
+                severity: 'success'
+            });
 
             // 변경 사항 확인을 위해 1.5초 후 메인으로 이동
             setTimeout(() => navigate('/'), 1500);
         } catch (err) {
-            setSnackbar({ open: true, message: '설정 저장에 실패했습니다. 비밀번호를 확인해주세요.', severity: 'error' });
+            console.error('설정 저장 실패:', err);
+            setSnackbar({
+                open: true,
+                message: '설정 저장에 실패했습니다. 관리자 권한을 확인해주세요.',
+                severity: 'error'
+            });
         } finally {
             setSubmitting(false);
         }
     };
 
-    if (loading) return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-            <CircularProgress color="secondary" />
-        </Box>
-    );
+    // 이미지 미리보기
+    const ImagePreview = () => {
+        if (!formData.mainImageUrl) return null;
+        return (
+            <Box sx={{ mt: 2, textAlign: 'center' }}>
+                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                    미리보기
+                </Typography>
+                <Box
+                    component="img"
+                    src={formData.mainImageUrl}
+                    alt="메인 이미지 미리보기"
+                    sx={{
+                        maxWidth: '100%',
+                        maxHeight: 200,
+                        borderRadius: 2,
+                        objectFit: 'contain',
+                        border: '1px solid rgba(255,255,255,0.1)'
+                    }}
+                    onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        setSnackbar({ open: true, message: '이미지를 불러올 수 없습니다', severity: 'error' });
+                    }}
+                />
+            </Box>
+        );
+    };
+
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+                <CircularProgress color="secondary" />
+            </Box>
+        );
+    }
 
     return (
         <Container maxWidth="sm" sx={{ py: 8 }}>
@@ -95,15 +172,19 @@ const AdminSettings: React.FC = () => {
                     <Stack spacing={4}>
                         {/* 텍스트 설정 섹션 */}
                         <Box>
-                            <Typography variant="h6" sx={{ mb: 2, color: 'secondary.main', fontWeight: 'bold' }}>메인 콘텐츠</Typography>
+                            <Typography variant="h6" sx={{ mb: 2, color: 'secondary.main', fontWeight: 'bold' }}>
+                                메인 콘텐츠
+                            </Typography>
                             <Stack spacing={2}>
                                 <TextField
                                     fullWidth
-                                    label="메인 타이틀 (HTML 브레이크 <br /> 사용 가능)"
+                                    label="메인 타이틀"
                                     name="mainTitle"
                                     value={formData.mainTitle}
                                     onChange={handleChange}
                                     multiline
+                                    required
+                                    helperText="HTML 태그 사용 가능 (예: <br />)"
                                 />
                                 <TextField
                                     fullWidth
@@ -113,22 +194,40 @@ const AdminSettings: React.FC = () => {
                                     onChange={handleChange}
                                     multiline
                                     rows={3}
+                                    required
                                 />
-                                <Box sx={{ display: 'flex', gap: 1 }}>
-                                    <TextField
-                                        fullWidth
-                                        label="메인 사진 URL"
-                                        name="mainImageUrl"
-                                        value={formData.mainImageUrl}
-                                        onChange={handleChange}
-                                        InputProps={{
-                                            endAdornment: uploading && <CircularProgress size={20} />
-                                        }}
-                                    />
-                                    <Button variant="outlined" component="label" sx={{ whiteSpace: 'nowrap' }}>
-                                        파일 선택
-                                        <input type="file" hidden accept="image/*" onChange={handleImageUpload} />
-                                    </Button>
+                                <Box>
+                                    <Box sx={{ display: 'flex', gap: 1 }}>
+                                        <TextField
+                                            fullWidth
+                                            label="메인 사진 URL"
+                                            name="mainImageUrl"
+                                            value={formData.mainImageUrl}
+                                            onChange={handleChange}
+                                            InputProps={{
+                                                endAdornment: uploading && (
+                                                    <InputAdornment position="end">
+                                                        <CircularProgress size={20} />
+                                                    </InputAdornment>
+                                                )
+                                            }}
+                                        />
+                                        <Button
+                                            variant="outlined"
+                                            component="label"
+                                            disabled={uploading}
+                                            sx={{ whiteSpace: 'nowrap', minWidth: '100px' }}
+                                        >
+                                            {uploading ? '업로드 중...' : '파일 선택'}
+                                            <input
+                                                type="file"
+                                                hidden
+                                                accept="image/*"
+                                                onChange={handleImageUpload}
+                                            />
+                                        </Button>
+                                    </Box>
+                                    <ImagePreview />
                                 </Box>
                             </Stack>
                         </Box>
@@ -137,7 +236,9 @@ const AdminSettings: React.FC = () => {
 
                         {/* 색상 설정 섹션 */}
                         <Box>
-                            <Typography variant="h6" sx={{ mb: 2, color: 'secondary.main', fontWeight: 'bold' }}>테마 색상 (Hex Code)</Typography>
+                            <Typography variant="h6" sx={{ mb: 2, color: 'secondary.main', fontWeight: 'bold' }}>
+                                테마 색상 (Hex Code)
+                            </Typography>
                             <Stack spacing={2}>
                                 <TextField
                                     fullWidth
@@ -145,8 +246,22 @@ const AdminSettings: React.FC = () => {
                                     name="primaryColor"
                                     value={formData.primaryColor}
                                     onChange={handleChange}
+                                    placeholder="#374151"
+                                    helperText="예: #FFFFFF 또는 #FFF"
                                     InputProps={{
-                                        startAdornment: <InputAdornment position="start"><Box sx={{ width: 20, height: 20, bgcolor: formData.primaryColor, border: '1px solid white' }} /></InputAdornment>
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <Box
+                                                    sx={{
+                                                        width: 24,
+                                                        height: 24,
+                                                        bgcolor: formData.primaryColor,
+                                                        border: '1px solid white',
+                                                        borderRadius: 1
+                                                    }}
+                                                />
+                                            </InputAdornment>
+                                        )
                                     }}
                                 />
                                 <TextField
@@ -155,8 +270,22 @@ const AdminSettings: React.FC = () => {
                                     name="secondaryColor"
                                     value={formData.secondaryColor}
                                     onChange={handleChange}
+                                    placeholder="#0D9488"
+                                    helperText="버튼, 강조 색상"
                                     InputProps={{
-                                        startAdornment: <InputAdornment position="start"><Box sx={{ width: 20, height: 20, bgcolor: formData.secondaryColor, border: '1px solid white' }} /></InputAdornment>
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <Box
+                                                    sx={{
+                                                        width: 24,
+                                                        height: 24,
+                                                        bgcolor: formData.secondaryColor,
+                                                        border: '1px solid white',
+                                                        borderRadius: 1
+                                                    }}
+                                                />
+                                            </InputAdornment>
+                                        )
                                     }}
                                 />
                                 <TextField
@@ -166,6 +295,7 @@ const AdminSettings: React.FC = () => {
                                     value={formData.navColor}
                                     onChange={handleChange}
                                     placeholder="transparent 또는 #000000"
+                                    helperText="투명: transparent, 불투명: #색상코드"
                                 />
                             </Stack>
                         </Box>
@@ -191,7 +321,9 @@ const AdminSettings: React.FC = () => {
                 onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
             >
-                <Alert severity={snackbar.severity} sx={{ width: '100%' }}>{snackbar.message}</Alert>
+                <Alert severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
             </Snackbar>
         </Container>
     );
